@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Carousel Studio — Carrosséis para Instagram</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,6 +69,28 @@
       <div id="panelContent"></div>
     </aside>
   </main>
+
+  <!-- barra inferior (só mobile) -->
+  <nav id="mobilebar">
+    <button id="mbImage">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4 17l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      Imagem
+    </button>
+    <button id="mbText">
+      <svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Texto
+    </button>
+    <button id="mbLayouts">
+      <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      Layouts
+    </button>
+    <button id="mbSlideMinus"><span class="mb-count">−</span>Slide</button>
+    <button id="mbSlidePlus"><span class="mb-count">+</span><span id="mbSlideCount">Slide</span></button>
+    <button id="mbPreview">
+      <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      Preview
+    </button>
+  </nav>
 
   <footer id="hintbar">
     <span>Arraste elementos livremente — eles podem <b>atravessar slides</b> como no SCRL.</span>

@@ -16,6 +16,11 @@ let state = {
   elements: [], // {id, type:'image'|'text', x,y,w,h,z, ...}
 };
 
+// detecção mobile: toque + tela estreita → layout adaptado (barra inferior, gaveta)
+const IS_MOBILE = matchMedia('(pointer: coarse)').matches || window.innerWidth < 700;
+const MARGIN = IS_MOBILE ? 12 : 40; // respiro em volta da tira
+if (IS_MOBILE) document.body.classList.add('mobile');
+
 let zoom = 0.35;
 let selectedId = null;
 let cropId = null; // imagem em modo "reposicionar" (pan do crop)
@@ -308,7 +313,7 @@ function fullRender() {
   const W = worldW(), H = state.H;
   stripBox.style.width = (W * zoom) + 'px';
   stripBox.style.height = (H * zoom) + 'px';
-  stripBox.style.margin = '40px';
+  stripBox.style.margin = MARGIN + 'px';
   strip.style.width = W + 'px';
   strip.style.height = H + 'px';
   strip.style.transform = `scale(${zoom})`;
@@ -317,6 +322,7 @@ function fullRender() {
   fullRenderStrip();
   renderPanel();
   $('#slideCount').textContent = `${state.slides} slide${state.slides > 1 ? 's' : ''}`;
+  $('#mbSlideCount').textContent = `${state.slides} slide${state.slides > 1 ? 's' : ''}`;
   $('#zoomLabel').textContent = Math.round(zoom * 100) + '%';
   $('#bgColor').value = state.bg;
   $('#formatSelect').value = `${state.W}x${state.H}`;
@@ -403,7 +409,11 @@ function renderSelection() {
     ? ['e', 'w']
     : ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
 
-  const hs = 26 / zoom;
+  // alvos de toque maiores no celular
+  const HB = IS_MOBILE ? 40 : 26;
+  const EL = IS_MOBILE ? 60 : 44;
+  const ES = IS_MOBILE ? 20 : 14;
+  const hs = HB / zoom;
   for (const pos of handles) {
     const h = document.createElement('div');
     const isEdge = pos.length === 1;
@@ -413,11 +423,11 @@ function renderSelection() {
       h.style.width = h.style.height = hs + 'px';
       h.style.margin = `${-hs / 2}px 0 0 ${-hs / 2}px`;
     } else if (pos === 'n' || pos === 's') {
-      h.style.width = (44 / zoom) + 'px'; h.style.height = (14 / zoom) + 'px';
-      h.style.margin = `${-7 / zoom}px 0 0 ${-22 / zoom}px`;
+      h.style.width = (EL / zoom) + 'px'; h.style.height = (ES / zoom) + 'px';
+      h.style.margin = `${-ES / 2 / zoom}px 0 0 ${-EL / 2 / zoom}px`;
     } else {
-      h.style.width = (14 / zoom) + 'px'; h.style.height = (44 / zoom) + 'px';
-      h.style.margin = `${-22 / zoom}px 0 0 ${-7 / zoom}px`;
+      h.style.width = (ES / zoom) + 'px'; h.style.height = (EL / zoom) + 'px';
+      h.style.margin = `${-EL / 2 / zoom}px 0 0 ${-ES / 2 / zoom}px`;
     }
     const cx = pos.includes('w') ? el.x : pos.includes('e') ? el.x + el.w : el.x + el.w / 2;
     const cy = pos.includes('n') ? el.y : pos.includes('s') ? el.y + el.h : el.y + el.h / 2;
@@ -449,6 +459,41 @@ function showGuides(gx, gy) {
 
 // ---------------------------------------------------------------- properties panel
 
+// alinha o elemento dentro do slide onde ele está (menos arraste fino)
+function alignSelected(axis, pos) {
+  const el = selectedId && getEl(selectedId);
+  if (!el) return;
+  pushUndo();
+  const slide = clamp(Math.floor((el.x + el.w / 2) / state.W), 0, state.slides - 1);
+  const ox = slide * state.W;
+  const M = 40; // margem das bordas
+  if (axis === 'h') {
+    if (pos === 0) el.x = ox + M;
+    if (pos === 1) el.x = ox + (state.W - el.w) / 2;
+    if (pos === 2) el.x = ox + state.W - el.w - M;
+  } else {
+    if (pos === 0) el.y = M;
+    if (pos === 1) el.y = (state.H - el.h) / 2;
+    if (pos === 2) el.y = state.H - el.h - M;
+  }
+  fullRender(); save();
+}
+
+const POS_SECTION = `
+  <div class="p-title" style="margin-top:14px">Posição no slide</div>
+  <div class="p-row" style="display:block">
+    <div class="seg" id="pAlignH">
+      <button data-p="0">⇤ Esq</button><button data-p="1">Centro</button><button data-p="2">Dir ⇥</button>
+    </div>
+  </div>
+  <div class="p-row" style="display:block">
+    <div class="seg" id="pAlignV">
+      <button data-p="0">⤒ Topo</button><button data-p="1">Meio</button><button data-p="2">Base ⤓</button>
+    </div>
+  </div>`;
+
+const SHEET_CLOSE = `<button class="sheet-close" id="pSheetClose">✕</button>`;
+
 function renderPanel() {
   const el = selectedId && getEl(selectedId);
   if (!el) { panel.classList.add('hidden'); return; }
@@ -458,10 +503,12 @@ function renderPanel() {
     const presetOpts = Object.entries(PRESETS).map(([k, [name]]) =>
       `<option value="${k}" ${(el.preset || 'none') === k ? 'selected' : ''}>${name}</option>`).join('');
     panelContent.innerHTML = `
+      ${SHEET_CLOSE}
       <div class="p-title">Imagem</div>
       ${el.src && isPannable(el) ? `<div class="p-btns" style="margin-top:0">
         <button class="p-btn accent" id="pCrop" style="flex:1 1 100%">${cropId === el.id ? '✓ Concluir reposição' : '✥ Reposicionar foto'}</button>
       </div>` : ''}
+      ${POS_SECTION}
       <div class="p-title" style="margin-top:14px">Filtro</div>
       <div class="p-row"><label>Preset</label>
         <select id="pPreset">${presetOpts}</select>
@@ -545,7 +592,9 @@ function renderPanel() {
     const fontOpts = FONTS.map(([v, n]) =>
       `<option value="${v}" ${el.fontFamily === v ? 'selected' : ''} style="font-family:'${v}'">${n}</option>`).join('');
     panelContent.innerHTML = `
+      ${SHEET_CLOSE}
       <div class="p-title">Texto</div>
+      ${POS_SECTION}
       <div class="p-row"><label>Fonte</label>
         <select id="pFont">${fontOpts}</select>
       </div>
@@ -583,6 +632,14 @@ function renderPanel() {
       b.onclick = () => { pushUndo(); el.align = b.dataset.a; fullRender(); save(); };
     });
   }
+
+  panelContent.querySelectorAll('#pAlignH button').forEach(b => {
+    b.onclick = () => alignSelected('h', +b.dataset.p);
+  });
+  panelContent.querySelectorAll('#pAlignV button').forEach(b => {
+    b.onclick = () => alignSelected('v', +b.dataset.p);
+  });
+  $('#pSheetClose').onclick = () => { selectedId = null; cropId = null; fullRender(); };
 
   $('#pFront').onclick = () => { pushUndo(); getEl(selectedId).z = maxZ() + 1; fullRender(); save(); };
   $('#pBack').onclick = () => {
@@ -753,7 +810,7 @@ document.addEventListener('pointermove', (e) => {
     let nx = drag.orig.x + dx;
     let ny = drag.orig.y + dy;
     // snap
-    const thr = 10 / zoom;
+    const thr = (IS_MOBILE ? 16 : 10) / zoom;
     const xTargets = [];
     for (let i = 0; i <= state.slides; i++) xTargets.push(i * state.W);
     for (let i = 0; i < state.slides; i++) xTargets.push(i * state.W + state.W / 2);
@@ -892,20 +949,26 @@ function setZoom(z, cx, cy) {
   const rect = viewport.getBoundingClientRect();
   cx = cx ?? rect.width / 2;
   cy = cy ?? rect.height / 2;
-  const wx = (viewport.scrollLeft + cx - 40) / zoom;
-  const wy = (viewport.scrollTop + cy - 40) / zoom;
+  const wx = (viewport.scrollLeft + cx - MARGIN) / zoom;
+  const wy = (viewport.scrollTop + cy - MARGIN) / zoom;
   zoom = clamp(z, 0.05, 2);
   fullRender();
-  viewport.scrollLeft = wx * zoom + 40 - cx;
-  viewport.scrollTop = wy * zoom + 40 - cy;
+  viewport.scrollLeft = wx * zoom + MARGIN - cx;
+  viewport.scrollTop = wy * zoom + MARGIN - cy;
 }
 
 function zoomFit() {
   const rect = viewport.getBoundingClientRect();
-  const z = Math.min(
-    (rect.height - 120) / state.H,
-    (rect.width - 120) / (state.W * Math.min(state.slides, 2.5))
-  );
+  let z;
+  if (IS_MOBILE) {
+    // celular: 1 slide preenchendo a largura; swipe navega entre slides
+    z = Math.min((rect.width - MARGIN * 2) / state.W, (rect.height - MARGIN * 2) / state.H);
+  } else {
+    z = Math.min(
+      (rect.height - 120) / state.H,
+      (rect.width - 120) / (state.W * Math.min(state.slides, 2.5))
+    );
+  }
   setZoom(z);
   viewport.scrollLeft = 0;
 }
@@ -1159,6 +1222,14 @@ $('#btnZoomOut').onclick = () => setZoom(zoom / 1.25);
 $('#btnZoomFit').onclick = zoomFit;
 $('#btnPreview').onclick = openPreview;
 $('#btnExport').onclick = exportAll;
+
+// barra inferior mobile (mesmas ações)
+$('#mbImage').onclick = addFreeImage;
+$('#mbText').onclick = addText;
+$('#mbLayouts').onclick = openLayouts;
+$('#mbSlidePlus').onclick = () => $('#btnSlidePlus').onclick();
+$('#mbSlideMinus').onclick = () => $('#btnSlideMinus').onclick();
+$('#mbPreview').onclick = openPreview;
 
 // ---------------------------------------------------------------- boot
 

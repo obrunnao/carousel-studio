@@ -455,3 +455,100 @@ body { display: flex; flex-direction: column; }
   transition: background .15s;
 }
 .preview-dots span.on { background: #4d9fff; }
+
+/* ---------- Modo mobile ---------- */
+
+#mobilebar { display: none; }
+.sheet-close { display: none; }
+
+body.mobile #hintbar { display: none; }
+body.mobile .brand { display: none; } /* espaço para o Exportar caber */
+body.mobile #btnZoomFit { display: none; } /* fit é automático no mobile */
+
+/* topbar enxuta: ações principais migram para a barra inferior */
+body.mobile #btnAddImage,
+body.mobile #btnAddText,
+body.mobile #btnLayouts,
+body.mobile #btnSlideMinus,
+body.mobile #btnSlidePlus,
+body.mobile #slideCount,
+body.mobile #btnZoomIn,
+body.mobile #btnZoomOut,
+body.mobile #zoomLabel,
+body.mobile #btnPreview,
+body.mobile .tb-sep { display: none; }
+body.mobile #topbar { gap: 2px; height: 48px; padding: 0 8px; }
+body.mobile .bg-picker span { display: none; }
+body.mobile .tb-btn { padding: 7px 8px; }
+body.mobile .tb-select { padding: 6px 4px; font-size: 12px; }
+
+/* barra inferior estilo app */
+body.mobile #mobilebar {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-soft);
+  border-top: 1px solid var(--line);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+  z-index: 60;
+}
+#mobilebar button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 10.5px;
+  padding: 4px 2px;
+}
+#mobilebar button:active { color: var(--accent); }
+#mobilebar svg { width: 20px; height: 20px; }
+#mobilebar .mb-count { font-size: 17px; font-weight: 700; line-height: 20px; }
+
+/* painel vira gaveta inferior */
+body.mobile #panel {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  width: auto;
+  max-height: 46vh;
+  border-left: none;
+  border-top: 1px solid var(--line);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 40px rgba(0,0,0,.5);
+  padding-top: 22px;
+  z-index: 50;
+}
+body.mobile #panel::before {
+  content: '';
+  position: absolute;
+  top: 8px; left: 50%;
+  width: 42px; height: 4px;
+  margin-left: -21px;
+  border-radius: 2px;
+  background: #3a3a42;
+}
+body.mobile .sheet-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 8px; right: 10px;
+  width: 30px; height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: var(--bg-softer);
+  color: var(--text);
+  font-size: 13px;
+  z-index: 2;
+}
+/* painel em 2 colunas para aproveitar a largura */
+body.mobile #panelContent { padding-bottom: 6px; }
+
+/* modais confortáveis no celular */
+body.mobile .modal-card { width: calc(100vw - 24px); padding: 16px; }
+body.mobile .phone { width: min(320px, 80vw); }
