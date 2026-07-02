@@ -2,7 +2,7 @@
 
 Editor de carrosséis para Instagram inspirado no [SCRL](https://scrl.com/) — canvas horizontal contínuo onde imagens e textos podem atravessar os limites dos slides (efeito seamless/panorâmico).
 
-**➡️ Usar online:** https://SEU_USUARIO.github.io/carousel-studio/
+**➡️ Usar online:** https://obrunnao.github.io/carousel-studio/
 
 ## Recursos
 
