@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousel Studio — Carrosséis para Instagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@400;700;900&family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span> Carousel<strong>Studio</strong>
+    </div>
+    <div class="top-actions">
+      <button id="btnAddImage" class="tb-btn" title="Adicionar imagem livre (pode atravessar slides)">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4 17l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        Imagem
+      </button>
+      <button id="btnAddText" class="tb-btn" title="Adicionar texto">
+        <svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Texto
+      </button>
+      <button id="btnLayouts" class="tb-btn" title="Aplicar layout de colagem ao slide visível">
+        <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        Layouts
+      </button>
+      <span class="tb-sep"></span>
+      <button id="btnSlideMinus" class="tb-btn icon" title="Remover último slide">−</button>
+      <span id="slideCount" class="slide-count">3 slides</span>
+      <button id="btnSlidePlus" class="tb-btn icon" title="Adicionar slide">+</button>
+      <span class="tb-sep"></span>
+      <select id="formatSelect" class="tb-select" title="Formato do slide">
+        <option value="1080x1350">4:5 · 1080×1350</option>
+        <option value="1080x1080">1:1 · 1080×1080</option>
+      </select>
+      <label class="bg-picker" title="Cor de fundo dos slides">
+        <input type="color" id="bgColor" value="#ffffff">
+        <span>Fundo</span>
+      </label>
+    </div>
+    <div class="top-actions right">
+      <button id="btnUndo" class="tb-btn icon" title="Desfazer (⌘Z)">↺</button>
+      <button id="btnRedo" class="tb-btn icon" title="Refazer (⇧⌘Z)">↻</button>
+      <span class="tb-sep"></span>
+      <button id="btnZoomOut" class="tb-btn icon" title="Diminuir zoom">−</button>
+      <span id="zoomLabel" class="zoom-label">50%</span>
+      <button id="btnZoomIn" class="tb-btn icon" title="Aumentar zoom">+</button>
+      <button id="btnZoomFit" class="tb-btn" title="Ajustar à tela">Ajustar</button>
+      <span class="tb-sep"></span>
+      <button id="btnPreview" class="tb-btn" title="Pré-visualizar como no Instagram">
+        <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        Preview
+      </button>
+      <button id="btnExport" class="tb-btn primary" title="Exportar todos os slides em PNG num arquivo ZIP">Exportar ZIP</button>
+    </div>
+  </header>
+
+  <main id="workspace">
+    <div id="viewport">
+      <div id="stripBox">
+        <div id="strip"></div>
+      </div>
+    </div>
+
+    <aside id="panel" class="hidden">
+      <div id="panelContent"></div>
+    </aside>
+  </main>
+
+  <footer id="hintbar">
+    <span>Arraste elementos livremente — eles podem <b>atravessar slides</b> como no SCRL.</span>
+    <span>Duplo clique: edita texto / reposiciona foto · ⌫ apaga · ⌘D duplica · ⌘Scroll dá zoom</span>
+  </footer>
+
+  <!-- Layout picker -->
+  <div id="layoutModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Layouts de colagem</h3>
+        <button class="modal-close" data-close="layoutModal">✕</button>
+      </div>
+      <p class="modal-sub">Aplicado ao slide no centro da tela. Clique em ＋ nos espaços para preencher com fotos.</p>
+      <div id="layoutGrid" class="layout-grid"></div>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div id="previewModal" class="modal hidden">
+    <div class="modal-card preview-card">
+      <div class="modal-head">
+        <h3>Preview do carrossel</h3>
+        <button class="modal-close" data-close="previewModal">✕</button>
+      </div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div id="previewScroller" class="preview-scroller"></div>
+        <div id="previewDots" class="preview-dots"></div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*" hidden>
+
+  <script src="app.js"></script>
+</body>
+</html>
