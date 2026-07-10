@@ -243,6 +243,7 @@ function addText() {
     text: 'Toque duas vezes\npara editar',
     fontFamily: 'Inter', fontWeight: '700', fontSize: 64,
     color: '#111111', align: 'center',
+    strokeW: 0, strokeColor: '#000000', shadow: 0,
     w: 620, h: 0, x: 0, y: 0, z: maxZ() + 1,
   };
   el.h = textHeight(el);
@@ -385,6 +386,14 @@ function renderElement(el) {
     d.style.lineHeight = '1.25';
     d.style.color = el.color;
     d.style.textAlign = el.align;
+    if ((el.strokeW || 0) > 0) {
+      // stroke centrado com o dobro da largura + paint-order → contorno externo de strokeW
+      d.style.webkitTextStroke = `${el.strokeW * 2}px ${el.strokeColor || '#000000'}`;
+      d.style.paintOrder = 'stroke fill';
+    }
+    if ((el.shadow || 0) > 0) {
+      d.style.textShadow = `0 ${Math.round(el.shadow * 0.35)}px ${el.shadow}px rgba(0,0,0,.6)`;
+    }
     d.textContent = lines.join('\n');
   }
   return d;
@@ -614,6 +623,20 @@ function renderPanel() {
       <div class="p-row"><label>Cor</label>
         <input type="color" id="pColor" value="${el.color}">
       </div>
+      <div class="p-title" style="margin-top:14px">Destaque (thumb)</div>
+      <div class="p-row">
+        <label>Contorno</label>
+        <input type="range" id="pStrokeW" min="0" max="20" value="${el.strokeW || 0}">
+        <span class="p-val">${el.strokeW || 0}</span>
+      </div>
+      <div class="p-row"><label>Cor do contorno</label>
+        <input type="color" id="pStrokeColor" value="${el.strokeColor || '#000000'}">
+      </div>
+      <div class="p-row">
+        <label>Sombra</label>
+        <input type="range" id="pShadow" min="0" max="40" value="${el.shadow || 0}">
+        <span class="p-val">${el.shadow || 0}</span>
+      </div>
       <div class="p-row" style="display:block">
         <div class="seg" id="pAlign">
           <button data-a="left" class="${el.align === 'left' ? 'on' : ''}">Esq</button>
@@ -632,6 +655,9 @@ function renderPanel() {
     bindRange('#pSize', v => { el.fontSize = +v; }, v => v);
     $('#pWeight').onchange = (e) => { pushUndo(); el.fontWeight = e.target.value; fullRender(); save(); };
     $('#pColor').oninput = (e) => { el.color = e.target.value; fullRender(); save(); };
+    bindRange('#pStrokeW', v => { el.strokeW = +v; }, v => v);
+    $('#pStrokeColor').oninput = (e) => { el.strokeColor = e.target.value; renderStripOnly(); save(); };
+    bindRange('#pShadow', v => { el.shadow = +v; }, v => v);
     $('#pAlign').querySelectorAll('button').forEach(b => {
       b.onclick = () => { pushUndo(); el.align = b.dataset.a; fullRender(); save(); };
     });
@@ -738,6 +764,30 @@ function deleteSelected() {
   state.elements = state.elements.filter(e => e.id !== selectedId);
   selectedId = null;
   fullRender(); save();
+}
+
+// duplica o slide visível como um novo slide no fim (fluxo de variantes A/B)
+function duplicateSlide() {
+  if (state.slides >= 10) return;
+  pushUndo();
+  const src = currentSlideIndex();
+  state.slides++;
+  const dst = state.slides - 1;
+  const off = (dst - src) * state.W;
+  let z = maxZ();
+  for (const el of sortedEls()) {
+    const cx = el.x + el.w / 2;
+    if (cx < src * state.W || cx >= (src + 1) * state.W) continue;
+    const copy = JSON.parse(JSON.stringify(el));
+    copy.id = uid();
+    copy.x += off;
+    copy.z = ++z;
+    state.elements.push(copy);
+  }
+  selectedId = null;
+  fullRender(); save();
+  // rola até o slide novo
+  viewport.scrollLeft = dst * state.W * zoom;
 }
 
 // ---------------------------------------------------------------- pointer interaction
@@ -1093,6 +1143,13 @@ async function renderSlideCanvas(slideIdx, scale) {
       ctx.font = `${el.fontWeight} ${el.fontSize}px "${el.fontFamily}"`;
       ctx.fillStyle = el.color;
       ctx.textBaseline = 'top';
+      const strokeW = el.strokeW || 0;
+      const shadow = el.shadow || 0;
+      if (strokeW > 0) {
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = strokeW * 2; // metade coberta pelo fill → contorno visível = strokeW
+        ctx.strokeStyle = el.strokeColor || '#000000';
+      }
       const lines = wrapText(el);
       const lh = el.fontSize * 1.25;
       lines.forEach((line, i) => {
@@ -1100,7 +1157,19 @@ async function renderSlideCanvas(slideIdx, scale) {
         if (el.align === 'center') tx = el.x + (el.w - ctx.measureText(line).width) / 2;
         if (el.align === 'right') tx = el.x + el.w - ctx.measureText(line).width;
         // pequeno ajuste vertical para casar com line-height do DOM
-        ctx.fillText(line, tx, el.y + i * lh + el.fontSize * 0.125);
+        const ty = el.y + i * lh + el.fontSize * 0.125;
+        if (shadow > 0) {
+          // shadow* não é afetado pelo transform do ctx → multiplica pela escala
+          ctx.shadowColor = 'rgba(0,0,0,.6)';
+          ctx.shadowOffsetY = shadow * 0.35 * scale;
+          ctx.shadowBlur = shadow * scale;
+        }
+        if (strokeW > 0) {
+          ctx.strokeText(line, tx, ty);
+          ctx.shadowColor = 'transparent'; // sombra só na 1ª camada
+        }
+        ctx.fillText(line, tx, ty);
+        ctx.shadowColor = 'transparent';
       });
       ctx.restore();
     }
@@ -1148,25 +1217,31 @@ async function exportAll() {
   const oldLabel = btn.textContent;
   try {
     await document.fonts.ready;
+    // paisagem = thumb YouTube → JPEG (limite de 2MB do YouTube)
+    const isThumb = state.W > state.H;
+    const mime = isThumb ? 'image/jpeg' : 'image/png';
+    const ext = isThumb ? 'jpg' : 'png';
+    const base = isThumb ? 'thumb' : 'carrossel-slide';
+    const zipName = isThumb ? 'thumbs-youtube.zip' : 'carrossel.zip';
     const blobs = [];
     for (let i = 0; i < state.slides; i++) {
       btn.textContent = `Renderizando ${i + 1}/${state.slides}…`;
       const c = await renderSlideCanvas(i, 1);
-      blobs.push(await new Promise(res => c.toBlob(res, 'image/png')));
+      blobs.push(await new Promise(res => c.toBlob(res, mime, 0.92)));
     }
     let zipped = false;
     try {
       btn.textContent = 'Compactando…';
       const JSZip = await loadJSZip();
       const zip = new JSZip();
-      blobs.forEach((b, i) => zip.file(`carrossel-slide-${String(i + 1).padStart(2, '0')}.png`, b));
+      blobs.forEach((b, i) => zip.file(`${base}-${String(i + 1).padStart(2, '0')}.${ext}`, b));
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      downloadBlob(zipBlob, 'carrossel.zip');
+      downloadBlob(zipBlob, zipName);
       zipped = true;
     } catch (e) {
-      // sem rede/CDN bloqueado: baixa os PNGs um a um
+      // sem rede/CDN bloqueado: baixa as imagens uma a uma
       for (let i = 0; i < blobs.length; i++) {
-        downloadBlob(blobs[i], `carrossel-slide-${String(i + 1).padStart(2, '0')}.png`);
+        downloadBlob(blobs[i], `${base}-${String(i + 1).padStart(2, '0')}.${ext}`);
         await new Promise(r => setTimeout(r, 350)); // evita bloqueio de multi-download
       }
     }
@@ -1244,7 +1319,10 @@ $('#btnZoomFit').onclick = zoomFit;
 $('#btnPreview').onclick = openPreview;
 $('#btnExport').onclick = exportAll;
 
+$('#btnDupSlide').onclick = duplicateSlide;
+
 // barra inferior mobile (mesmas ações)
+$('#mbDupSlide').onclick = duplicateSlide;
 $('#mbImage').onclick = addFreeImage;
 $('#mbText').onclick = addText;
 $('#mbLayouts').onclick = openLayouts;

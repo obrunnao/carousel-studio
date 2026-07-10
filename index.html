@@ -31,10 +31,12 @@
       <button id="btnSlideMinus" class="tb-btn icon" title="Remover último slide">−</button>
       <span id="slideCount" class="slide-count">3 slides</span>
       <button id="btnSlidePlus" class="tb-btn icon" title="Adicionar slide">+</button>
+      <button id="btnDupSlide" class="tb-btn icon" title="Duplicar slide visível (bom para variantes A/B de thumb)">⧉</button>
       <span class="tb-sep"></span>
       <select id="formatSelect" class="tb-select" title="Formato do slide">
         <option value="1080x1350">4:5 · 1080×1350</option>
         <option value="1080x1080">1:1 · 1080×1080</option>
+        <option value="1280x720">16:9 · 1280×720 (thumb YouTube)</option>
       </select>
       <label class="bg-picker" title="Cor de fundo dos slides">
         <input type="color" id="bgColor" value="#ffffff">
@@ -86,6 +88,7 @@
     </button>
     <button id="mbSlideMinus"><span class="mb-count">−</span>Slide</button>
     <button id="mbSlidePlus"><span class="mb-count">+</span><span id="mbSlideCount">Slide</span></button>
+    <button id="mbDupSlide"><span class="mb-count">⧉</span>Duplicar</button>
     <button id="mbPreview">
       <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
       Preview
