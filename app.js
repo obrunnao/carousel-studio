@@ -188,6 +188,7 @@ function pickFile() {
 // quebra texto em linhas usando measureText (mesma lógica no DOM e no export)
 function wrapText(el) {
   measureCtx.font = `${el.fontWeight} ${el.fontSize}px "${el.fontFamily}"`;
+  measureCtx.letterSpacing = `${el.letterS || 0}px`;
   const out = [];
   for (const para of String(el.text).split('\n')) {
     const words = para.split(' ');
@@ -203,7 +204,7 @@ function wrapText(el) {
 }
 
 function textHeight(el) {
-  return wrapText(el).length * el.fontSize * 1.25;
+  return wrapText(el).length * el.fontSize * (el.lineH ?? 1.25);
 }
 
 // ---------------------------------------------------------------- element factories
@@ -248,6 +249,7 @@ function addText() {
     fontFamily: 'Inter', fontWeight: '700', fontSize: 64,
     color: '#111111', align: 'center',
     strokeW: 0, strokeColor: '#000000', shadow: 0,
+    lineH: 1.25, letterS: 0,
     w: 620, h: 0, x: 0, y: 0, z: maxZ() + 1,
   };
   el.h = textHeight(el);
@@ -384,10 +386,11 @@ function renderElement(el) {
     }
   } else {
     const lines = wrapText(el);
-    el.h = lines.length * el.fontSize * 1.25;
+    el.h = lines.length * el.fontSize * (el.lineH ?? 1.25);
     d.style.height = el.h + 'px';
     d.style.font = `${el.fontWeight} ${el.fontSize}px "${el.fontFamily}"`;
-    d.style.lineHeight = '1.25';
+    d.style.lineHeight = String(el.lineH ?? 1.25);
+    d.style.letterSpacing = `${el.letterS || 0}px`;
     d.style.color = el.color;
     d.style.textAlign = el.align;
     if ((el.strokeW || 0) > 0) {
@@ -624,6 +627,16 @@ function renderPanel() {
           <option value="700" ${el.fontWeight === '700' ? 'selected' : ''}>Bold</option>
         </select>
       </div>
+      <div class="p-row">
+        <label>Entrelinha</label>
+        <input type="range" id="pLineH" min="80" max="220" value="${Math.round((el.lineH ?? 1.25) * 100)}">
+        <span class="p-val">${(el.lineH ?? 1.25).toFixed(2)}</span>
+      </div>
+      <div class="p-row">
+        <label>Letras</label>
+        <input type="range" id="pLetterS" min="-10" max="60" value="${el.letterS || 0}">
+        <span class="p-val">${el.letterS || 0}</span>
+      </div>
       <div class="p-row"><label>Cor</label>
         <input type="color" id="pColor" value="${el.color}">
       </div>
@@ -658,6 +671,8 @@ function renderPanel() {
     $('#pFont').onchange = (e) => { pushUndo(); el.fontFamily = e.target.value; fullRender(); save(); };
     bindRange('#pSize', v => { el.fontSize = +v; }, v => v);
     $('#pWeight').onchange = (e) => { pushUndo(); el.fontWeight = e.target.value; fullRender(); save(); };
+    bindRange('#pLineH', v => { el.lineH = +v / 100; el.h = textHeight(el); }, v => (+v / 100).toFixed(2));
+    bindRange('#pLetterS', v => { el.letterS = +v; el.h = textHeight(el); }, v => v);
     $('#pColor').oninput = (e) => { el.color = e.target.value; fullRender(); save(); };
     bindRange('#pStrokeW', v => { el.strokeW = +v; }, v => v);
     $('#pStrokeColor').oninput = (e) => { el.strokeColor = e.target.value; renderStripOnly(); save(); };
@@ -994,7 +1009,8 @@ function startTextEdit(el) {
   ta.style.width = (el.w + 20) + 'px';
   ta.style.height = (el.h + el.fontSize * 2) + 'px';
   ta.style.font = `${el.fontWeight} ${el.fontSize}px "${el.fontFamily}"`;
-  ta.style.lineHeight = '1.25';
+  ta.style.lineHeight = String(el.lineH ?? 1.25);
+  ta.style.letterSpacing = `${el.letterS || 0}px`;
   ta.style.color = el.color;
   ta.style.textAlign = el.align;
   strip.appendChild(ta);
@@ -1145,6 +1161,7 @@ async function renderSlideCanvas(slideIdx, scale) {
     } else if (el.type === 'text') {
       ctx.save();
       ctx.font = `${el.fontWeight} ${el.fontSize}px "${el.fontFamily}"`;
+      ctx.letterSpacing = `${el.letterS || 0}px`;
       ctx.fillStyle = el.color;
       ctx.textBaseline = 'top';
       const strokeW = el.strokeW || 0;
@@ -1154,14 +1171,15 @@ async function renderSlideCanvas(slideIdx, scale) {
         ctx.lineWidth = strokeW * 2; // metade coberta pelo fill → contorno visível = strokeW
         ctx.strokeStyle = el.strokeColor || '#000000';
       }
+      const lineH = el.lineH ?? 1.25;
       const lines = wrapText(el);
-      const lh = el.fontSize * 1.25;
+      const lh = el.fontSize * lineH;
       lines.forEach((line, i) => {
         let tx = el.x;
         if (el.align === 'center') tx = el.x + (el.w - ctx.measureText(line).width) / 2;
         if (el.align === 'right') tx = el.x + el.w - ctx.measureText(line).width;
-        // pequeno ajuste vertical para casar com line-height do DOM
-        const ty = el.y + i * lh + el.fontSize * 0.125;
+        // meia-entrelinha para casar com o line-height do DOM
+        const ty = el.y + i * lh + el.fontSize * (lineH - 1) / 2;
         if (shadow > 0) {
           // shadow* não é afetado pelo transform do ctx → multiplica pela escala
           ctx.shadowColor = 'rgba(0,0,0,.6)';
