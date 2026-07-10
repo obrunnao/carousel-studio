@@ -1,3 +1,11 @@
+/* Fonte local embutida (Fontfabric — variante gratuita) */
+@font-face {
+  font-family: 'Panton Rust Black';
+  src: url('fonts/panton-rust-black-base.ttf') format('truetype');
+  font-weight: 100 900; /* qualquer peso usa o mesmo arquivo, sem bold sintético */
+  font-display: swap;
+}
+
 :root {
   --bg: #0d0d0f;
   --bg-soft: #17171a;

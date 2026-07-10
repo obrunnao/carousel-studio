@@ -40,8 +40,12 @@ const fileInput = $('#fileInput');
 
 const FONTS = [
   ['Inter', 'Inter'],
-  ['Playfair Display', 'Playfair Display'],
+  ['Panton Rust Black', 'Panton Rust Black'],
+  ['Anton', 'Anton'],
+  ['Archivo Black', 'Archivo Black'],
+  ['Rubik Dirt', 'Rubik Dirt'],
   ['Bebas Neue', 'Bebas Neue'],
+  ['Playfair Display', 'Playfair Display'],
   ['Space Grotesk', 'Space Grotesk'],
   ['Caveat', 'Caveat'],
   ['Georgia', 'Georgia'],
