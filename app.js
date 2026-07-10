@@ -594,6 +594,9 @@ function renderPanel() {
     panelContent.innerHTML = `
       ${SHEET_CLOSE}
       <div class="p-title">Texto</div>
+      <div class="p-btns" style="margin-top:0">
+        <button class="p-btn accent" id="pEditText" style="flex:1 1 100%">✏️ Editar texto</button>
+      </div>
       ${POS_SECTION}
       <div class="p-row"><label>Fonte</label>
         <select id="pFont">${fontOpts}</select>
@@ -624,6 +627,7 @@ function renderPanel() {
         <button class="p-btn" id="pDup">Duplicar</button>
         <button class="p-btn danger" id="pDel">Apagar</button>
       </div>`;
+    $('#pEditText').onclick = () => startTextEdit(el);
     $('#pFont').onchange = (e) => { pushUndo(); el.fontFamily = e.target.value; fullRender(); save(); };
     bindRange('#pSize', v => { el.fontSize = +v; }, v => v);
     $('#pWeight').onchange = (e) => { pushUndo(); el.fontWeight = e.target.value; fullRender(); save(); };
@@ -739,6 +743,7 @@ function deleteSelected() {
 // ---------------------------------------------------------------- pointer interaction
 
 let drag = null; // {mode:'move'|'resize', id, pos, startX, startY, orig:{...}, moved, undoPushed}
+let lastTap = { id: null, t: 0 }; // detecção de duplo toque (touch não gera dblclick por causa do preventDefault)
 
 function worldPoint(e) {
   const r = strip.getBoundingClientRect();
@@ -768,6 +773,20 @@ strip.addEventListener('pointerdown', (e) => {
     if (cropId && cropId !== id) cropId = null; // clicar em outro elemento sai do modo crop
     selectedId = id;
     const el = getEl(id);
+
+    // duplo toque (touch): edita texto / alterna reposição da foto
+    if (e.pointerType === 'touch') {
+      const now = Date.now();
+      const isDoubleTap = lastTap.id === id && (now - lastTap.t) < 350;
+      lastTap = { id, t: now };
+      if (isDoubleTap) {
+        drag = null;
+        if (el.type === 'text') { fullRender(); startTextEdit(el); }
+        else if (el.src && isPannable(el)) { cropId = (cropId === id) ? null : id; fullRender(); }
+        e.preventDefault();
+        return;
+      }
+    }
     if (cropId === id && el.src) {
       // modo reposicionar: arrastar move a foto dentro da moldura
       drag = {
@@ -911,6 +930,8 @@ strip.addEventListener('dblclick', (e) => {
 });
 
 function startTextEdit(el) {
+  // no celular a gaveta cobriria o texto durante a edição
+  if (IS_MOBILE) panel.classList.add('hidden');
   const ta = document.createElement('textarea');
   ta.className = 'text-editor';
   ta.value = el.text;
